@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF=8">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    html {
+      padding: 0px;
+      margin: 0px;
+      background-color: rgb(235, 232, 226);
+      font-family: monospace;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>INFO 4310 A4</h1>
+  <h2>Title</h2>
+  <div id="plot-div">
+    <svg id="plot-svg" height="800" width="1000"></svg>
+  </div>
+  <script>
+    const svg = d3.select("#plot-svg");
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+
+    const requestData = async function () {
+      const products = await d3.csv("processed.csv");
+      console.log(products);
+    }
+    requestData();
+  </script>
+</body>
+
+</html>
