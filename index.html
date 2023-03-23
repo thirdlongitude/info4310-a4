@@ -19,18 +19,44 @@
   <h1>INFO 4310 A4</h1>
   <h2>Title</h2>
   <div id="plot-div">
-    <svg id="plot-svg" height="800" width="1000"></svg>
+    <svg id="plot-svg" height="900" width="1000"></svg>
   </div>
   <script>
     const svg = d3.select("#plot-svg");
     const width = svg.attr("width");
     const height = svg.attr("height");
+    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    let annotations = svg.append("g").attr("id", "annotations");
 
-    const requestData = async function () {
-      const products = await d3.csv("processed.csv");
-      console.log(products);
-    }
-    requestData();
+      const requestData = async function () {
+        const products = await d3.csv("processed.csv");
+        console.log(products);
+
+        // setup x scale
+        const parseTime = d3.timeParse("%Y-%m-%d");
+        const yearExtent = d3.extent(products, d => parseTime(d['release_date']));
+        console.log(yearExtent);
+        const yearScale = d3.scaleTime().domain(yearExtent).range([0, width]);
+        let bottomAxis = d3.axisBottom(yearScale);
+        let bottomGrid = d3.axisBottom(yearScale).tickSize(-height).tickFormat("");
+        // append x
+        svg.append("g").attr("id", "bottom-axis").attr("transform", `translate(0, ${height})`).call(bottomAxis);
+
+        // setup y scale
+        const upvotesExtent = d3.extent(products, d => d['upvotes']);
+        const upvotesScale = d3.scaleLinear().domain(upvotesExtent).range([height, 0]);
+        console.log(upvotesExtent);
+        let leftAxis = d3.axisLeft(upvotesScale);
+        let leftGrid = d3.axisLeft(upvotesScale).tickSize(-width).tickFormat("");
+        // append y 
+        svg.append("g")
+          .attr("class", "y gridlines")
+          .attr("transform", "translate(" + (margin.left) + "," + margin.top + ")")
+          .call(leftAxis);
+      };
+
+      requestData();
+
   </script>
 </body>
 
