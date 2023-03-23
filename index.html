@@ -21,6 +21,27 @@
   <div id="plot-div">
     <svg id="plot-svg" height="900" width="1000"></svg>
   </div>
+  
+  <div id="quiz">
+    <h2>Podcast Recommendation Quiz</h2>
+    <form>
+      <label for="category">Choose a category:</label>
+      <select id="category" name="category">
+        <option value="comedy">Comedy</option>
+        <option value="true crime">True Crime</option>
+        <option value="news">News</option>
+        <option value="sports">Sports</option>
+      </select>
+      <br>
+      <label for="area">Choose an area or name:</label>
+      <input type="text" id="area" name="area">
+      <br>
+      <button type="submit">Get Recommendation</button>
+    </form>
+    <div id="recommendation"></div>
+  </div>
+
+
   <script>
     const svg = d3.select("#plot-svg");
     const width = svg.attr("width");
@@ -56,6 +77,8 @@
       };
 
       requestData();
+
+      
 
   </script>
 </body>
