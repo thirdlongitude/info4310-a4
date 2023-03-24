@@ -14,42 +14,41 @@
     }
 
     .tooltip {
-    position: absolute;
-    background-color: white;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    pointer-events: none;
-    font-size: 14px;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  input[type="text"],
-  select {
-    padding: 6px 12px;
-    margin: 8px 0;
-    display: inline-block;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
+      position: absolute;
+      background-color: white;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      pointer-events: none;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
 
-  button {
-    background-color: #E49393;
-    color: white;
-    padding: 6px 12px;
-    margin: 8px 0;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: monospace;
-  }
+    input[type="text"],
+    select {
+      padding: 6px 12px;
+      margin: 8px 0;
+      display: inline-block;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
 
-  button:hover {
-    background-color: #C16B6B;
-  }
+    button {
+      background-color: #E49393;
+      color: white;
+      padding: 6px 12px;
+      margin: 8px 0;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+    }
 
-
+    button:hover {
+      background-color: #C16B6B;
+    }
   </style>
 </head>
 
@@ -71,9 +70,6 @@
     <button id="search-button">Search</button>
   </div>
 
-
-
-
   <div id="plot-div">
     <svg id="plot-svg" height="500" width="800"></svg>
   </div>
@@ -87,6 +83,13 @@
 
     const requestData = async function () {
       const data = await d3.csv("processed.csv");
+
+      // convert category tags to list
+      for (p of data) {
+        let t = p.category_tags;
+        t = t.replaceAll(/'/g, '"');
+        p.category_tags = JSON.parse(t);
+      }
       console.log(data);
 
       // setup x scale
@@ -120,7 +123,8 @@
         .style("fill", '#E49393')
         .attr("cx", d => yearScale(parseTime(d['release_date'])))
         .attr("cy", d => upvotesScale(d['upvotes']))
-        .attr("r", 3);
+        .attr("r", 3)
+        .attr("opacity", 0.4);
 
       // add tooltip
       function formatTooltipContent(d) {
@@ -129,10 +133,10 @@
         <b>Release Date:</b> ${d.release_date}<br>
         <b>Product Ranking:</b> ${d.product_ranking}<br>
         <b>Upvotes:</b> ${d.upvotes}<br>
-        <b>Category:</b> ${d.category_tags}<br>)}
+        <b>Category:</b> ${d.category_tags}<br>
       `;
       }
-      
+
       const tooltip = d3.select("#tooltip");
 
       // add mouseover and mouseout events
@@ -164,7 +168,7 @@
         searchProduct(data, productName);
       });
 
-      
+
 
 
     };
