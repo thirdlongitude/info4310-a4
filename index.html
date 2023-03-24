@@ -12,22 +12,42 @@
       font-family: monospace;
       text-align: center;
     }
+
+    .tooltip {
+    position: absolute;
+    background-color: white;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    pointer-events: none;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+
   </style>
 </head>
 
 <body>
   <h1>INFO 4310 A4</h1>
   <h2>Release Date vs Upvotes</h2>
+  <div id="tooltip" class="tooltip"></div>
 
   <div>
     <label for="category-select">Filter by Category:</label>
     <select id="category-select">
       <option value="all">All</option>
-      <option value="category1">Category 1</option>
-      <option value="category2">Category 2</option>
-      <option value="category3">Category 3</option>
     </select>
   </div>
+
+  <div>
+    <label for="search-box">Search by Product Name:</label>
+    <input type="text" id="search-box" placeholder="Enter product name">
+    <button id="search-button">Search</button>
+  </div>
+
+
 
 
   <div id="plot-div">
@@ -78,8 +98,49 @@
         .attr("cy", d => upvotesScale(d['upvotes']))
         .attr("r", 3);
 
-        // add 
+      // add tooltip
+      function formatTooltipContent(d) {
+        return `
+        <b>Name:</b> ${d.name}<br>
+        <b>Release Date:</b> ${d.release_date}<br>
+        <b>Product Ranking:</b> ${d.product_ranking}<br>
+        <b>Upvotes:</b> ${d.upvotes}<br>
+        <b>Category:</b> ${d.category_tags}<br>)}
+      `;
+      }
+      
+      const tooltip = d3.select("#tooltip");
 
+      // add mouseover and mouseout events
+      svg.selectAll(".dot")
+        .on("mouseover", function (event, d) {
+          tooltip.transition().duration(200).style("opacity", 0.9);
+          tooltip.html(formatTooltipContent(d))
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function (event, d) {
+          tooltip.transition().duration(500).style("opacity", 0);
+        });
+
+      // add search function by product name
+      function searchProduct(data, productName) {
+        const selectedProduct = data.find(d => d.name.toLowerCase() === productName.toLowerCase());
+
+        if (selectedProduct) {
+          svg.selectAll(".dot")
+            .style("fill", d => d.name.toLowerCase() === productName.toLowerCase() ? "blue" : "#E49393");
+        } else {
+          alert("Product not found");
+        }
+      }
+
+      document.getElementById("search-button").addEventListener("click", () => {
+        const productName = document.getElementById("search-box").value;
+        searchProduct(data, productName);
+      });
+
+      
 
 
     };
