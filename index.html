@@ -53,6 +53,44 @@
     .gridlines {
       stroke: lightgray;
     }
+
+    #content {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 20px;
+    }
+
+    .info-box {
+    margin-left: 20px;
+    padding: 20px;
+    width: 300px;
+    height: auto;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: #333;
+    }
+
+    .info-box h3 {
+    margin: 0;
+    margin-bottom: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    }
+
+    .info-box p {
+    margin: 0;
+    margin-bottom: 8px;
+    text-align: left;
+    }
+
+    .info-box p:last-child {
+    margin-bottom: 0;
+    }
+
   </style>
 </head>
 
@@ -75,9 +113,13 @@
     <button id="reset-button">Reset</button>
   </div>
 
-  <div id="plot-div">
-    <svg id="plot-svg" height="500" width="800"></svg>
+  <div id="content">
+    <div id="plot-div">
+      <svg id="plot-svg" height="500" width="800"></svg>
+    </div>
+    <div id="info-box" class="info-box"></div>
   </div>
+
 
   <script>
     const svg = d3.select("#plot-svg");
@@ -154,7 +196,23 @@
       `;
       }
 
+      function formatInfoBoxContent(d) {
+        return `
+        <h3>${d.name}</h3>
+        <img src="${d.main_image}" alt="${d.name}" style="width: 100%; max-width: 300px;"><br>
+        <b>Product Hunt:</b> <a href="${d._id}" target="_blank">${d.id}</a><br>
+        <b>Product Description:</b> ${d.product_description}<br>
+        <b>Product Ranking:</b> ${d.product_ranking}<br>
+        <b>Upvotes:</b> ${d.upvotes}<br>
+        `;
+      }
+
       // add scatterplot
+      svg.selectAll(".dot")
+        .on("click", function (event, d) {
+          d3.select("#info-box").html(formatInfoBoxContent(d));
+      });
+
       function loadScatter() {
         svg.selectAll(".dot")
           .data(data)
@@ -167,7 +225,7 @@
           .attr("opacity", 0.4);
 
         // add mouseover and mouseout events
-        svg.selectAll(".dot")
+      svg.selectAll(".dot")
           .on("mouseover", function (event, d) {
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(formatTooltipContent(d))
@@ -176,9 +234,12 @@
           })
           .on("mouseout", function (event, d) {
             tooltip.transition().duration(500).style("opacity", 0);
+          })
+          .on("click", function (event, d) {
+            d3.select("#info-box").html(formatInfoBoxContent(d));
           });
       }
-      loadScatter();
+
 
       // filter by category tag
       function filterCat() {
@@ -190,10 +251,9 @@
         }
       }
 
-      // add search function by product name
+    // add search function by product name
       function searchProduct(data, productName) {
         const selectedProduct = data.find(d => d.name.toLowerCase() === productName.toLowerCase());
-
         if (selectedProduct) {
           svg.selectAll(".dot")
             .style("fill", d => d.name.toLowerCase() === productName.toLowerCase() ? "blue" : "lightgray");
@@ -202,6 +262,7 @@
           alert("Product not found");
         }
       }
+
 
       document.getElementById("search-button").addEventListener("click", () => {
         const productName = document.getElementById("search-box").value;
