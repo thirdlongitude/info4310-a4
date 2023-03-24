@@ -86,6 +86,7 @@
     const margin = { top: 20, right: 20, bottom: 70, left: 70 };
     let annotations = svg.append("g").attr("id", "annotations");
     const dropdown = d3.select("#category-select");
+    const tooltip = d3.select("#tooltip");
 
     const requestData = async function () {
       const data = await d3.csv("processed.csv");
@@ -142,20 +143,6 @@
         "#cbce3d", "#c3d07c", "#588a35", "#6fd263", "#409369", "#6ee2b9",
         "#4bb6d4", "#6d7eca", "#8a5ed0", "#dd91c9", "#9c4f82", "#d246a7"]);
 
-      // add scatterplot
-      function loadScatter() {
-        svg.selectAll(".dot")
-          .data(data)
-          .enter().append("circle")
-          .attr("class", "dot")
-          .style("fill", d => catScale(d.category_tags[0]))
-          .attr("cx", d => yearScale(parseTime(d['release_date'])))
-          .attr("cy", d => upvotesScale(d['upvotes']))
-          .attr("r", 3)
-          .attr("opacity", 0.4);
-      }
-      loadScatter();
-
       // add tooltip
       function formatTooltipContent(d) {
         return `
@@ -167,19 +154,31 @@
       `;
       }
 
-      const tooltip = d3.select("#tooltip");
+      // add scatterplot
+      function loadScatter() {
+        svg.selectAll(".dot")
+          .data(data)
+          .enter().append("circle")
+          .attr("class", "dot")
+          .style("fill", d => catScale(d.category_tags[0]))
+          .attr("cx", d => yearScale(parseTime(d['release_date'])))
+          .attr("cy", d => upvotesScale(d['upvotes']))
+          .attr("r", 3)
+          .attr("opacity", 0.4);
 
-      // add mouseover and mouseout events
-      svg.selectAll(".dot")
-        .on("mouseover", function (event, d) {
-          tooltip.transition().duration(200).style("opacity", 0.9);
-          tooltip.html(formatTooltipContent(d))
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", function (event, d) {
-          tooltip.transition().duration(500).style("opacity", 0);
-        });
+        // add mouseover and mouseout events
+        svg.selectAll(".dot")
+          .on("mouseover", function (event, d) {
+            tooltip.transition().duration(200).style("opacity", 0.9);
+            tooltip.html(formatTooltipContent(d))
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", function (event, d) {
+            tooltip.transition().duration(500).style("opacity", 0);
+          });
+      }
+      loadScatter();
 
       // filter by category tag
       function filterCat() {
