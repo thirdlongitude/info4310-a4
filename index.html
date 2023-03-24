@@ -17,7 +17,19 @@
 
 <body>
   <h1>INFO 4310 A4</h1>
-  <h2>Scatterplot of Release Date vs Upvotes</h2>
+  <h2>Release Date vs Upvotes</h2>
+
+  <div>
+    <label for="category-select">Filter by Category:</label>
+    <select id="category-select">
+      <option value="all">All</option>
+      <option value="category1">Category 1</option>
+      <option value="category2">Category 2</option>
+      <option value="category3">Category 3</option>
+    </select>
+  </div>
+
+
   <div id="plot-div">
     <svg id="plot-svg" height="500" width="800"></svg>
   </div>
@@ -57,7 +69,6 @@
       svg.append("g").attr("class", "gridlines").attr("transform", `translate(${margin.left}, 0)`).call(leftGrid);
 
       // add scatterplot
-      
       svg.selectAll(".dot")
         .data(data)
         .enter().append("circle")
@@ -66,6 +77,11 @@
         .attr("cx", d => yearScale(parseTime(d['release_date'])))
         .attr("cy", d => upvotesScale(d['upvotes']))
         .attr("r", 3);
+
+        // add 
+
+
+
     };
 
     requestData();
