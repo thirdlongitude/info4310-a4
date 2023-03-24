@@ -17,69 +17,58 @@
 
 <body>
   <h1>INFO 4310 A4</h1>
-  <h2>Title</h2>
+  <h2>Scatterplot of Release Date vs Upvotes</h2>
   <div id="plot-div">
-    <svg id="plot-svg" height="900" width="1000"></svg>
+    <svg id="plot-svg" height="500" width="800"></svg>
   </div>
-  
-  <div id="quiz">
-    <h2>Podcast Recommendation Quiz</h2>
-    <form>
-      <label for="category">Choose a category:</label>
-      <select id="category" name="category">
-        <option value="comedy">Comedy</option>
-        <option value="true crime">True Crime</option>
-        <option value="news">News</option>
-        <option value="sports">Sports</option>
-      </select>
-      <br>
-      <label for="area">Choose an area or name:</label>
-      <input type="text" id="area" name="area">
-      <br>
-      <button type="submit">Get Recommendation</button>
-    </form>
-    <div id="recommendation"></div>
-  </div>
-
 
   <script>
     const svg = d3.select("#plot-svg");
     const width = svg.attr("width");
     const height = svg.attr("height");
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    const margin = { top: 20, right: 20, bottom: 70, left: 70 };
     let annotations = svg.append("g").attr("id", "annotations");
 
-      const requestData = async function () {
-        const products = await d3.csv("processed.csv");
-        console.log(products);
+    const requestData = async function () {
+      const data = await d3.csv("processed.csv");
+      console.log(data);
 
-        // setup x scale
-        const parseTime = d3.timeParse("%Y-%m-%d");
-        const yearExtent = d3.extent(products, d => parseTime(d['release_date']));
-        console.log(yearExtent);
-        const yearScale = d3.scaleTime().domain(yearExtent).range([0, width]);
-        let bottomAxis = d3.axisBottom(yearScale);
-        let bottomGrid = d3.axisBottom(yearScale).tickSize(-height).tickFormat("");
-        // append x
-        svg.append("g").attr("id", "bottom-axis").attr("transform", `translate(0, ${height})`).call(bottomAxis);
+      // setup x scale
+      const parseTime = d3.timeParse("%Y-%m-%d");
+      const yearExtent = d3.extent(data, d => parseTime(d['release_date']));
+      const yearScale = d3.scaleTime().domain(yearExtent).range([margin.left, width - margin.right]);
+      let bottomAxis = d3.axisBottom(yearScale);
+      let bottomGrid = d3.axisBottom(yearScale).tickSize(-height + margin.top + margin.bottom).tickFormat("");
+      // append x
+      svg.append("g").attr("id", "bottom-axis").attr("transform", `translate(0, ${height - margin.bottom})`).call(bottomAxis);
+      svg.append("g").attr("class", "gridlines").attr("transform", `translate(0, ${height - margin.bottom})`).call(bottomGrid);
 
-        // setup y scale
-        const upvotesExtent = d3.extent(products, d => d['upvotes']);
-        const upvotesScale = d3.scaleLinear().domain(upvotesExtent).range([height, 0]);
-        console.log(upvotesExtent);
-        let leftAxis = d3.axisLeft(upvotesScale);
-        let leftGrid = d3.axisLeft(upvotesScale).tickSize(-width).tickFormat("");
-        // append y 
-        svg.append("g")
-          .attr("class", "y gridlines")
-          .attr("transform", "translate(" + (margin.left) + "," + margin.top + ")")
-          .call(leftAxis);
-      };
+      // setup y scale
+      const upvotesExtent = d3.extent(data, d => +d['upvotes']);
+      const upvotesScale = d3.scaleLog().domain([1, upvotesExtent[1]]).range([height - margin.bottom, margin.top]);
+      console.log(upvotesExtent);
+      let leftAxis = d3.axisLeft(upvotesScale).ticks(10, "~s");
+      let leftGrid = d3.axisLeft(upvotesScale).tickSize(-width + margin.left + margin.right).tickFormat("");
+      // append y 
+      svg.append("g")
+        .attr("class", "y gridlines")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(leftAxis);
+      svg.append("g").attr("class", "gridlines").attr("transform", `translate(${margin.left}, 0)`).call(leftGrid);
 
-      requestData();
-
+      // add scatterplot
       
+      svg.selectAll(".dot")
+        .data(data)
+        .enter().append("circle")
+        .attr("class", "dot")
+        .style("fill", '#E49393')
+        .attr("cx", d => yearScale(parseTime(d['release_date'])))
+        .attr("cy", d => upvotesScale(d['upvotes']))
+        .attr("r", 3);
+    };
 
+    requestData();
   </script>
 </body>
 
