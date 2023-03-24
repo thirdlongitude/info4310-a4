@@ -49,6 +49,10 @@
     button:hover {
       background-color: #C16B6B;
     }
+
+    .gridlines {
+      stroke: lightgray;
+    }
   </style>
 </head>
 
@@ -60,7 +64,7 @@
   <div>
     <label for="category-select">Filter by Category:</label>
     <select id="category-select">
-      <option value="all">All</option>
+      <!-- <option value="all" class="filter-option">All</option> -->
     </select>
   </div>
 
@@ -68,6 +72,7 @@
     <label for="search-box">Search by Product Name:</label>
     <input type="text" id="search-box" placeholder="e.g., Matter">
     <button id="search-button">Search</button>
+    <button id="reset-button">Reset</button>
   </div>
 
   <div id="plot-div">
@@ -80,17 +85,34 @@
     const height = svg.attr("height");
     const margin = { top: 20, right: 20, bottom: 70, left: 70 };
     let annotations = svg.append("g").attr("id", "annotations");
+    const dropdown = d3.select("#category-select");
 
     const requestData = async function () {
       const data = await d3.csv("processed.csv");
 
-      // convert category tags to list
+      // convert category tags to list & get list of unique category tags
+      let category_list = ['all'];
+
       for (p of data) {
         let t = p.category_tags;
         t = t.replaceAll(/'/g, '"');
         p.category_tags = JSON.parse(t);
+        for (i of p.category_tags) {
+          if (!category_list.includes(i)) {
+            category_list.push(i);
+          }
+        }
       }
       console.log(data);
+      console.log(category_list);
+
+      // populate select element
+      dropdown.selectAll("option.filter-option").data(category_list)
+        .join("option")
+        .attr("class", "filter-option")
+        .attr("value", d => d)
+        .text(d => d);
+      dropdown.on('change', filterCat);
 
       // setup x scale
       const parseTime = d3.timeParse("%Y-%m-%d");
@@ -110,21 +132,29 @@
       let leftGrid = d3.axisLeft(upvotesScale).tickSize(-width + margin.left + margin.right).tickFormat("");
       // append y 
       svg.append("g")
-        .attr("class", "y gridlines")
+        .attr("id", "left-axis")
         .attr("transform", `translate(${margin.left}, 0)`)
         .call(leftAxis);
       svg.append("g").attr("class", "gridlines").attr("transform", `translate(${margin.left}, 0)`).call(leftGrid);
 
+      // color scale
+      const catScale = d3.scaleOrdinal().range(["#cd5442", "#dc9748", "#8e7130",
+        "#cbce3d", "#c3d07c", "#588a35", "#6fd263", "#409369", "#6ee2b9",
+        "#4bb6d4", "#6d7eca", "#8a5ed0", "#dd91c9", "#9c4f82", "#d246a7"]);
+
       // add scatterplot
-      svg.selectAll(".dot")
-        .data(data)
-        .enter().append("circle")
-        .attr("class", "dot")
-        .style("fill", '#E49393')
-        .attr("cx", d => yearScale(parseTime(d['release_date'])))
-        .attr("cy", d => upvotesScale(d['upvotes']))
-        .attr("r", 3)
-        .attr("opacity", 0.4);
+      function loadScatter() {
+        svg.selectAll(".dot")
+          .data(data)
+          .enter().append("circle")
+          .attr("class", "dot")
+          .style("fill", d => catScale(d.category_tags[0]))
+          .attr("cx", d => yearScale(parseTime(d['release_date'])))
+          .attr("cy", d => upvotesScale(d['upvotes']))
+          .attr("r", 3)
+          .attr("opacity", 0.4);
+      }
+      loadScatter();
 
       // add tooltip
       function formatTooltipContent(d) {
@@ -151,13 +181,24 @@
           tooltip.transition().duration(500).style("opacity", 0);
         });
 
+      // filter by category tag
+      function filterCat() {
+        let current_cat = dropdown.property("value");
+        loadScatter();
+        if (current_cat !== 'all') {
+          svg.selectAll(".dot")
+            .filter(d => d.category_tags[0] !== current_cat).remove();
+        }
+      }
+
       // add search function by product name
       function searchProduct(data, productName) {
         const selectedProduct = data.find(d => d.name.toLowerCase() === productName.toLowerCase());
 
         if (selectedProduct) {
           svg.selectAll(".dot")
-            .style("fill", d => d.name.toLowerCase() === productName.toLowerCase() ? "blue" : "#E49393");
+            .style("fill", d => d.name.toLowerCase() === productName.toLowerCase() ? "blue" : "lightgray");
+          svg.selectAll(".dot").filter(d => d.name.toLowerCase() !== productName.toLowerCase()).remove();
         } else {
           alert("Product not found");
         }
@@ -168,7 +209,9 @@
         searchProduct(data, productName);
       });
 
-
+      d3.select("#reset-button").on("click", () => {
+        loadScatter();
+      });
     };
 
     requestData();
