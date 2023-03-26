@@ -50,47 +50,57 @@
       background-color: #C16B6B;
     }
 
-    .gridlines {
-      stroke: lightgray;
+    .gridlines .tick line {
+      stroke: gray;
     }
 
     #content {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 20px;
+    }
+
+    #info-boxes-div {
+      width: auto;
+      height: 520px;
+      overflow-y: scroll;
     }
 
     .info-box {
-    margin-left: 20px;
-    padding: 20px;
-    width: 300px;
-    height: auto;
-    background-color: #f9f9f9;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    color: #333;
+      margin-left: 20px;
+      padding: 20px;
+      width: 300px;
+      height: auto;
+      background-color: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      color: #333;
     }
 
     .info-box h3 {
-    margin: 0;
-    margin-bottom: 10px;
-    font-size: 18px;
-    font-weight: 600;
+      margin: 0;
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: 600;
     }
 
     .info-box p {
-    margin: 0;
-    margin-bottom: 8px;
-    text-align: left;
+      margin: 0;
+      margin-bottom: 8px;
+      text-align: left;
     }
 
     .info-box p:last-child {
-    margin-bottom: 0;
+      margin-bottom: 0;
     }
 
+    #not-found-msg {
+      color: red;
+      display: none;
+    }
   </style>
 </head>
 
@@ -102,7 +112,6 @@
   <div>
     <label for="category-select">Filter by Category:</label>
     <select id="category-select">
-      <!-- <option value="all" class="filter-option">All</option> -->
     </select>
   </div>
 
@@ -111,17 +120,20 @@
     <input type="text" id="search-box" placeholder="e.g., Matter">
     <button id="search-button">Search</button>
     <button id="reset-button">Reset</button>
+    <p id="not-found-msg">Product not found; please enter an exact name</p>
   </div>
 
   <div id="content">
     <div id="plot-div">
-      <svg id="plot-svg" height="500" width="800"></svg>
+      <svg id="plot-svg" height="530" width="800"></svg>
     </div>
-    <div id="info-box" class="info-box"></div>
+    <div id="info-boxes-div">
+      <div id="info-box" class="info-box"></div>
+    </div>
   </div>
 
-
   <script>
+    const info_boxes = d3.select("#info-boxes-div");
     const svg = d3.select("#plot-svg");
     const width = svg.attr("width");
     const height = svg.attr("height");
@@ -178,14 +190,19 @@
         .attr("id", "left-axis")
         .attr("transform", `translate(${margin.left}, 0)`)
         .call(leftAxis);
-      svg.append("g").attr("class", "gridlines").attr("transform", `translate(${margin.left}, 0)`).call(leftGrid);
+      svg.append("g")
+        .attr("class", "gridlines")
+        .attr("transform", `translate(${margin.left}, 0)`)
+        .call(leftGrid);
 
       // color scale
-      const catScale = d3.scaleOrdinal().range(["#cd5442", "#dc9748", "#8e7130",
-        "#cbce3d", "#c3d07c", "#588a35", "#6fd263", "#409369", "#6ee2b9",
-        "#4bb6d4", "#6d7eca", "#8a5ed0", "#dd91c9", "#9c4f82", "#d246a7"]);
+      const catScale = d3.scaleOrdinal()
+        .domain(category_list.slice(1))
+        .range(["#c94348", "#d97f65", "#d9572c", "#985128", "#cc8833", "#787524",
+          "#a6a336", "#4e813d", "#58ab42", "#43ac87", "#6385cd", "#6c61ce",
+          "#cc78d4", "#95419c", "#c7508e"]);
 
-      // add tooltip
+      // format tooltip
       function formatTooltipContent(d) {
         return `
         <b>Name:</b> ${d.name}<br>
@@ -196,22 +213,17 @@
       `;
       }
 
+      // format info box on the right
       function formatInfoBoxContent(d) {
         return `
         <h3>${d.name}</h3>
         <img src="${d.main_image}" alt="${d.name}" style="width: 100%; max-width: 300px;"><br>
-        <b>Product Hunt:</b> <a href="${d._id}" target="_blank">${d.id}</a><br>
+        <a href="${d.link}" target="_blank"><b>Product Hunt link</b></a><br>
         <b>Product Description:</b> ${d.product_description}<br>
         <b>Product Ranking:</b> ${d.product_ranking}<br>
         <b>Upvotes:</b> ${d.upvotes}<br>
         `;
       }
-
-      // add scatterplot
-      svg.selectAll(".dot")
-        .on("click", function (event, d) {
-          d3.select("#info-box").html(formatInfoBoxContent(d));
-      });
 
       function loadScatter() {
         svg.selectAll(".dot")
@@ -222,17 +234,24 @@
           .attr("cx", d => yearScale(parseTime(d['release_date'])))
           .attr("cy", d => upvotesScale(d['upvotes']))
           .attr("r", 3)
-          .attr("opacity", 0.4);
+          // 0.7 opacity doesn't work for filter and idk why
+          .attr("opacity", () => (all_categories === true) ? 0.4 : 0.7);
 
         // add mouseover and mouseout events
-      svg.selectAll(".dot")
+        svg.selectAll(".dot")
           .on("mouseover", function (event, d) {
+            let el = d3.select(this);
+            el.attr('r', 5).attr('opacity', 0.9);
+
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(formatTooltipContent(d))
               .style("left", (event.pageX + 10) + "px")
               .style("top", (event.pageY - 28) + "px");
           })
           .on("mouseout", function (event, d) {
+            let el = d3.select(this);
+            el.attr('r', 3).attr('opacity', () => (all_categories === true) ? 0.4 : 0.7);
+
             tooltip.transition().duration(500).style("opacity", 0);
           })
           .on("click", function (event, d) {
@@ -240,36 +259,62 @@
           });
       }
 
+      // initial load graph
+      let all_categories = true;
+      loadScatter();
 
       // filter by category tag
       function filterCat() {
         let current_cat = dropdown.property("value");
-        loadScatter();
+        d3.select('#not-found-msg').style('display', 'none');
+
         if (current_cat !== 'all') {
+          all_categories = false;
+          loadScatter();
+
           svg.selectAll(".dot")
             .filter(d => d.category_tags[0] !== current_cat).remove();
+        } else {
+          all_categories = true;
+          loadScatter();
         }
       }
 
-    // add search function by product name
+      // add search function by product name
       function searchProduct(data, productName) {
         const selectedProduct = data.find(d => d.name.toLowerCase() === productName.toLowerCase());
+
         if (selectedProduct) {
-          svg.selectAll(".dot")
-            .style("fill", d => d.name.toLowerCase() === productName.toLowerCase() ? "blue" : "lightgray");
+          d3.select('#not-found-msg').style('display', 'none');
+          all_categories = false;
+          loadScatter();
+
+          // remove irrelevant products
           svg.selectAll(".dot").filter(d => d.name.toLowerCase() !== productName.toLowerCase()).remove();
+
+          // get search results
+          let results = svg.selectAll(".dot");
+
+          // show info boxes for search results
+          info_boxes.selectAll(".info-box").data(results._groups[0])
+            .join("div")
+            .attr("class", "info-box")
+            .html(d => formatInfoBoxContent(d.__data__));
         } else {
-          alert("Product not found");
+          d3.select("#not-found-msg").style('display', 'inline');
         }
       }
-
 
       document.getElementById("search-button").addEventListener("click", () => {
         const productName = document.getElementById("search-box").value;
         searchProduct(data, productName);
       });
 
+      // reset button
       d3.select("#reset-button").on("click", () => {
+        all_categories = true;
+        d3.select('#not-found-msg').style('display', 'none');
+
         loadScatter();
       });
     };
