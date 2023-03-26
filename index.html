@@ -63,7 +63,7 @@
 
     #info-boxes-div {
       width: auto;
-      height: 520px;
+      height: 480px;
       overflow-y: scroll;
     }
 
@@ -301,7 +301,7 @@
             .attr("class", "info-box")
             .html(d => formatInfoBoxContent(d.__data__));
         } else {
-          d3.select("#not-found-msg").style('display', 'inline');
+          d3.select("#not-found-msg").style('display', 'block');
         }
       }
 
